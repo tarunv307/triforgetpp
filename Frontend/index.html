@@ -1,0 +1,2468 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FC-03 · Risk-Based Access Intelligence Engine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #F8FAFC;
+      --surface: #FFFFFF;
+      --border: #E2E8F0;
+      --primary: #6366F1;
+      --primary-hover: #4F46E5;
+      --success: #10B981;
+      --warning: #F59E0B;
+      --caution: #F97316;
+      --danger: #EF4444;
+      --text: #0F172A;
+      --muted: #64748B;
+      --light: #94A3B8;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, .04), 0 8px 24px rgba(0, 0, 0, .04);
+      --shadow-lg: 0 4px 12px rgba(0, 0, 0, .06), 0 16px 40px rgba(0, 0, 0, .06);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #F8FAFC 0%, #EEF2FF 100%);
+      color: var(--text);
+      min-height: 100vh
+    }
+
+    /* ===== AUTH ===== */
+    .auth-wrap {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 100vh
+    }
+
+    .brand-panel {
+      background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+      color: #fff;
+      padding: 60px 50px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      position: relative;
+      overflow: hidden
+    }
+
+    .brand-panel::before {
+      content: "";
+      position: absolute;
+      width: 500px;
+      height: 500px;
+      background: rgba(255, 255, 255, .08);
+      border-radius: 50%;
+      top: -100px;
+      right: -150px
+    }
+
+    .brand-panel::after {
+      content: "";
+      position: absolute;
+      width: 400px;
+      height: 400px;
+      background: rgba(255, 255, 255, .06);
+      border-radius: 50%;
+      bottom: -100px;
+      left: -100px
+    }
+
+    .brand-content {
+      position: relative;
+      z-index: 2
+    }
+
+    .brand-logo {
+      font-size: 64px;
+      margin-bottom: 24px
+    }
+
+    .brand-title {
+      font-size: 42px;
+      font-weight: 800;
+      line-height: 1.15;
+      margin-bottom: 20px;
+      letter-spacing: -.02em
+    }
+
+    .brand-tagline {
+      font-size: 17px;
+      color: rgba(255, 255, 255, .85);
+      line-height: 1.7;
+      margin-bottom: 40px
+    }
+
+    .brand-footer {
+      padding-top: 24px;
+      border-top: 1px solid rgba(255, 255, 255, .2);
+      color: rgba(255, 255, 255, .7);
+      font-size: 13px;
+      letter-spacing: .05em;
+      text-transform: uppercase
+    }
+
+    .form-panel {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px
+    }
+
+    .form-card {
+      width: 100%;
+      max-width: 440px;
+      background: #fff;
+      padding: 44px 40px;
+      border-radius: 24px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, .08)
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      background: #F1F5F9;
+      padding: 4px;
+      border-radius: 12px;
+      margin-bottom: 32px
+    }
+
+    .tab {
+      flex: 1;
+      padding: 10px;
+      text-align: center;
+      border-radius: 9px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all .2s;
+      color: var(--muted)
+    }
+
+    .tab.active {
+      background: #fff;
+      color: var(--text);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, .06)
+    }
+
+    .form-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 6px
+    }
+
+    .form-subtitle {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 28px
+    }
+
+    .field {
+      margin-bottom: 16px
+    }
+
+    .field label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 6px
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      padding: 12px 16px;
+      font-family: inherit;
+      font-size: 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+      transition: all .2s;
+      color: var(--text)
+    }
+
+    .field input:focus,
+    .field select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, .12)
+    }
+
+    .field input[readonly] {
+      background: #F8FAFC;
+      color: var(--muted)
+    }
+
+    .row-between {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      font-size: 13px
+    }
+
+    .checkbox {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      cursor: pointer
+    }
+
+    .link {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 500
+    }
+
+    .link:hover {
+      text-decoration: underline
+    }
+
+    .btn {
+      width: 100%;
+      padding: 13px 24px;
+      background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-family: inherit;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all .2s;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, .3)
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 20px rgba(99, 102, 241, .4)
+    }
+
+    .btn:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none
+    }
+
+    .btn-secondary {
+      background: #fff;
+      color: var(--text);
+      border: 1px solid var(--border);
+      box-shadow: none
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      box-shadow: none
+    }
+
+    .demo-creds {
+      margin-top: 24px;
+      padding: 16px;
+      background: #F8FAFC;
+      border-radius: 10px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.9
+    }
+
+    .demo-creds strong {
+      color: var(--text)
+    }
+
+    .demo-creds code {
+      background: #E2E8F0;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 11px;
+      color: var(--text);
+      cursor: pointer;
+      transition: all .15s
+    }
+
+    .demo-creds code:hover {
+      background: #CBD5E1
+    }
+
+    .alert {
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      margin-bottom: 16px;
+      display: none
+    }
+
+    .alert.show {
+      display: block
+    }
+
+    .alert-error {
+      background: #FEE2E2;
+      color: #991B1B;
+      border: 1px solid #FCA5A5
+    }
+
+    .alert-success {
+      background: #D1FAE5;
+      color: #065F46;
+      border: 1px solid #6EE7B7
+    }
+
+    .role-info {
+      padding: 14px;
+      background: #EEF2FF;
+      border-radius: 10px;
+      font-size: 12px;
+      color: #3730A3;
+      line-height: 1.7;
+      margin-bottom: 16px
+    }
+
+    /* ===== APP ===== */
+    .app {
+      display: none;
+      min-height: 100vh
+    }
+
+    .app.show {
+      display: block
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(255, 255, 255, .85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px
+    }
+
+    .topbar-logo {
+      font-size: 26px
+    }
+
+    .topbar-title {
+      font-weight: 700;
+      font-size: 15px
+    }
+
+    .topbar-sub {
+      color: var(--muted);
+      font-size: 11px;
+      margin-top: 1px
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 14px
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      animation: pulse 2s infinite
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: .4
+      }
+    }
+
+    .live-label {
+      font-size: 12px;
+      color: var(--muted)
+    }
+
+    .role-badge {
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: #fff
+    }
+
+    .role-admin {
+      background: var(--danger)
+    }
+
+    .role-analyst {
+      background: var(--primary)
+    }
+
+    .role-viewer {
+      background: var(--success)
+    }
+
+    .avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6366F1, #8B5CF6);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 13px
+    }
+
+    .user-name {
+      font-weight: 600;
+      font-size: 13px
+    }
+
+    .bell-wrap {
+      position: relative;
+      cursor: pointer;
+      font-size: 18px;
+      padding: 4px 8px;
+      border-radius: 8px;
+      transition: background .2s;
+      display: none;
+      line-height: 1
+    }
+
+    .bell-wrap:hover {
+      background: #F1F5F9
+    }
+
+    .bell-badge {
+      position: absolute;
+      top: -2px;
+      right: -2px;
+      background: var(--danger);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      min-width: 17px;
+      height: 17px;
+      border-radius: 999px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+      border: 2px solid #fff
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      min-height: calc(100vh - 60px)
+    }
+
+    .sidebar {
+      background: #fff;
+      border-right: 1px solid var(--border);
+      padding: 24px 16px
+    }
+
+    .sidebar-heading {
+      font-size: 11px;
+      color: var(--light);
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      margin-bottom: 16px;
+      padding-left: 12px
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--muted);
+      transition: all .15s;
+      margin-bottom: 4px
+    }
+
+    .nav-item:hover {
+      background: #F1F5F9;
+      color: var(--text)
+    }
+
+    .nav-item.active {
+      background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%);
+      color: var(--primary);
+      font-weight: 600
+    }
+
+    .nav-icon {
+      font-size: 16px
+    }
+
+    .nav-badge {
+      margin-left: auto;
+      background: var(--danger);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 999px
+    }
+
+    .sidebar-bottom {
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border)
+    }
+
+    .sidebar-user {
+      padding: 12px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.7
+    }
+
+    .sidebar-user strong {
+      color: var(--text)
+    }
+
+    .logout-btn {
+      width: 100%;
+      padding: 10px;
+      margin-top: 12px;
+      background: #FEE2E2;
+      color: #991B1B;
+      border: none;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s
+    }
+
+    .logout-btn:hover {
+      background: #FCA5A5
+    }
+
+    .main {
+      padding: 32px 40px;
+      max-width: 1400px
+    }
+
+    .page {
+      display: none
+    }
+
+    .page.active {
+      display: block;
+      animation: fadeIn .3s ease
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+    .page-header {
+      margin-bottom: 28px
+    }
+
+    .page-title {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -.02em;
+      margin-bottom: 6px
+    }
+
+    .page-sub {
+      color: var(--muted);
+      font-size: 14px
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 28px
+    }
+
+    .kpi {
+      background: #fff;
+      padding: 22px 24px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+      transition: all .2s
+    }
+
+    .kpi:hover {
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-2px)
+    }
+
+    .kpi-label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: .05em
+    }
+
+    .kpi-value {
+      font-size: 32px;
+      font-weight: 800;
+      margin: 8px 0 4px;
+      letter-spacing: -.02em
+    }
+
+    .kpi-delta {
+      font-size: 12px;
+      font-weight: 600
+    }
+
+    .delta-up {
+      color: var(--success)
+    }
+
+    .delta-down {
+      color: var(--danger)
+    }
+
+    .card {
+      background: #fff;
+      padding: 24px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm)
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 16px
+    }
+
+    .chart-wrap {
+      position: relative;
+      height: 240px;
+      width: 100%
+    }
+
+    .chart-wrap canvas {
+      display: block;
+      width: 100% !important;
+      height: 100% !important
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px
+    }
+
+    .decision-badge {
+      display: inline-block;
+      padding: 6px 16px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: .04em
+    }
+
+    .badge-allow {
+      background: #D1FAE5;
+      color: #065F46
+    }
+
+    .badge-challenge {
+      background: #FEF3C7;
+      color: #92400E
+    }
+
+    .badge-restrict {
+      background: #FFEDD5;
+      color: #9A3412
+    }
+
+    .badge-deny {
+      background: #FEE2E2;
+      color: #991B1B
+    }
+
+    .eval-grid {
+      display: grid;
+      grid-template-columns: 400px 1fr;
+      gap: 24px;
+      align-items: start
+    }
+
+    .eval-form .field {
+      margin-bottom: 14px
+    }
+
+    .radio-cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px
+    }
+
+    .radio-card {
+      padding: 12px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      text-align: center;
+      transition: all .2s;
+      background: #fff
+    }
+
+    .radio-card:hover {
+      border-color: var(--primary)
+    }
+
+    .radio-card.selected {
+      border-color: var(--primary);
+      background: #EEF2FF;
+      color: var(--primary)
+    }
+
+    .score-display {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      margin-bottom: 20px
+    }
+
+    .score-ring {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: conic-gradient(var(--primary) 0deg 0deg, #F1F5F9 0deg 360deg);
+      transition: background .6s ease;
+      flex-shrink: 0
+    }
+
+    .score-ring::before {
+      content: "";
+      position: absolute;
+      inset: 8px;
+      background: #fff;
+      border-radius: 50%
+    }
+
+    .score-value {
+      position: relative;
+      z-index: 2;
+      font-size: 32px;
+      font-weight: 800
+    }
+
+    .score-label {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .08em
+    }
+
+    .decision-big {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -.02em;
+      margin-bottom: 6px
+    }
+
+    .decision-allow {
+      color: var(--success)
+    }
+
+    .decision-challenge {
+      color: var(--warning)
+    }
+
+    .decision-restrict {
+      color: var(--caution)
+    }
+
+    .decision-deny {
+      color: var(--danger)
+    }
+
+    .reason-list {
+      list-style: none;
+      margin: 16px 0
+    }
+
+    .reason-list li {
+      padding: 8px 0 8px 28px;
+      position: relative;
+      font-size: 13px;
+      color: var(--text);
+      border-bottom: 1px solid #F1F5F9
+    }
+
+    .reason-list li::before {
+      content: "→";
+      position: absolute;
+      left: 8px;
+      color: var(--primary);
+      font-weight: 700
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px
+    }
+
+    .table thead th {
+      text-align: left;
+      padding: 12px 16px;
+      background: #F8FAFC;
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      border-bottom: 1px solid var(--border)
+    }
+
+    .table tbody td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #F1F5F9
+    }
+
+    .table tbody tr:hover {
+      background: #F8FAFC
+    }
+
+    .timeline {
+      position: relative;
+      padding-left: 32px
+    }
+
+    .timeline::before {
+      content: "";
+      position: absolute;
+      left: 11px;
+      top: 8px;
+      bottom: 8px;
+      width: 2px;
+      background: var(--border)
+    }
+
+    .timeline-item {
+      position: relative;
+      margin-bottom: 20px
+    }
+
+    .timeline-dot {
+      position: absolute;
+      left: -28px;
+      top: 6px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      box-shadow: 0 0 0 2px var(--border)
+    }
+
+    .timeline-card {
+      background: #fff;
+      padding: 16px 20px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm)
+    }
+
+    .timeline-time {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .05em
+    }
+
+    .timeline-title {
+      font-weight: 700;
+      font-size: 15px;
+      margin: 4px 0 8px
+    }
+
+    .timeline-meta {
+      font-size: 12px;
+      color: var(--muted)
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 14px 20px;
+      border-radius: 12px;
+      background: var(--text);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 500;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, .15);
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all .3s;
+      z-index: 1000;
+      max-width: 340px
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1
+    }
+
+    .add-user-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px 16px
+    }
+
+    .add-user-grid .field {
+      margin-bottom: 0
+    }
+
+    .alert-item {
+      display: flex;
+      gap: 14px;
+      padding: 16px;
+      border-bottom: 1px solid #F1F5F9;
+      align-items: flex-start
+    }
+
+    .alert-item:last-child {
+      border-bottom: none
+    }
+
+    .alert-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 17px;
+      flex-shrink: 0
+    }
+
+    .alert-critical .alert-icon {
+      background: #FEE2E2
+    }
+
+    .alert-warning .alert-icon {
+      background: #FEF3C7
+    }
+
+    .alert-info .alert-icon {
+      background: #DBEAFE
+    }
+
+    .alert-title {
+      font-weight: 700;
+      font-size: 13.5px;
+      margin-bottom: 3px
+    }
+
+    .alert-detail {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.6
+    }
+
+    .alert-time {
+      font-size: 11px;
+      color: var(--light);
+      margin-left: auto;
+      white-space: nowrap
+    }
+
+    .otp-box {
+      display: none;
+      margin-top: 18px;
+      padding: 18px;
+      background: #FFFBEB;
+      border: 1px solid #FDE68A;
+      border-radius: 12px
+    }
+
+    .otp-input-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px
+    }
+
+    .otp-input-row input {
+      flex: 1;
+      padding: 11px 14px;
+      border: 1px solid #FDE68A;
+      border-radius: 9px;
+      font-family: inherit;
+      font-size: 16px;
+      letter-spacing: .35em;
+      text-align: center;
+      font-weight: 700;
+      color: var(--text);
+      background: #fff
+    }
+
+    .otp-input-row input:focus {
+      outline: none;
+      border-color: var(--warning);
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, .15)
+    }
+
+    .muted-empty {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted)
+    }
+
+    @media(max-width:900px) {
+      .auth-wrap {
+        grid-template-columns: 1fr
+      }
+
+      .brand-panel {
+        display: none
+      }
+
+      .layout {
+        grid-template-columns: 1fr
+      }
+
+      .sidebar {
+        display: none
+      }
+
+      .kpi-grid {
+        grid-template-columns: 1fr 1fr
+      }
+
+      .grid-2 {
+        grid-template-columns: 1fr
+      }
+
+      .eval-grid {
+        grid-template-columns: 1fr
+      }
+
+      .add-user-grid {
+        grid-template-columns: 1fr
+      }
+
+      .main {
+        padding: 24px 18px
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ============ AUTH PAGE ============ -->
+  <div class="auth-wrap" id="authPage">
+    <div class="brand-panel">
+      <div class="brand-content">
+        <div class="brand-logo">🛡️</div>
+        <h1 class="brand-title">Risk-Based Access<br>Intelligence Engine</h1>
+        <p class="brand-tagline">Context-aware, continuously risk-sensitive access decisions — not static roles.</p>
+        <div class="brand-footer">FC-03 · Cyber Security Domain</div>
+      </div>
+    </div>
+
+    <div class="form-panel">
+      <div class="form-card">
+        <div class="tabs">
+          <div class="tab active" data-tab="login">🔐 Login</div>
+          <div class="tab" data-tab="signup">✨ Sign Up</div>
+        </div>
+
+        <!-- LOGIN -->
+        <div id="loginForm">
+          <h2 class="form-title">Welcome back</h2>
+          <p class="form-subtitle">Sign in with your email</p>
+
+          <div class="alert alert-error" id="loginError"></div>
+
+          <div class="field">
+            <label>Email Address</label>
+            <input type="email" id="loginEmail" value="admin@bank.com" placeholder="priya@bank.com"
+              autocomplete="email" />
+          </div>
+          <div class="field">
+            <label>Password</label>
+            <input type="password" id="loginPass" value="admin123" placeholder="••••••••"
+              autocomplete="current-password" />
+          </div>
+
+          <div class="row-between">
+            <label class="checkbox"><input type="checkbox" /> Remember me</label>
+            <a href="#" class="link">Forgot password?</a>
+          </div>
+
+          <button class="btn" onclick="doLogin()">Sign In</button>
+
+          <div class="demo-creds">
+            <strong>Demo credentials (click to fill):</strong><br>
+            <code onclick="fillLogin('admin@bank.com','admin123')">admin@bank.com / admin123</code> → full access<br>
+            <code onclick="fillLogin('arjun@bank.com','analyst123')">arjun@bank.com / analyst123</code> → evaluate +
+            view<br>
+            <code onclick="fillLogin('kavya@bank.com','viewer123')">kavya@bank.com / viewer123</code> → read only<br>
+            <code onclick="fillLogin('priya@bank.com','priya123')">priya@bank.com / priya123</code> → standard user
+          </div>
+        </div>
+
+        <!-- SIGNUP -->
+        <div id="signupForm" style="display:none;">
+          <h2 class="form-title">Create account</h2>
+          <p class="form-subtitle">Choose your role — pages adjust automatically</p>
+
+          <div class="alert alert-error" id="signupError"></div>
+          <div class="alert alert-success" id="signupSuccess"></div>
+
+          <div class="field">
+            <label>Full Name</label>
+            <input type="text" id="suName" placeholder="Priya Sharma" />
+          </div>
+          <div class="field">
+            <label>Email Address</label>
+            <input type="email" id="suEmail" placeholder="priya@bank.com" />
+          </div>
+          <div class="field">
+            <label>Password</label>
+            <input type="password" id="suPass" placeholder="min 6 characters" />
+          </div>
+          <div class="field">
+            <label>Confirm Password</label>
+            <input type="password" id="suPass2" placeholder="repeat password" />
+          </div>
+          <div class="field">
+            <label>Requested Role</label>
+            <select id="suRole">
+              <option value="viewer">👤 Viewer — read only</option>
+              <option value="analyst">🔍 Analyst — evaluate + view</option>
+              <option value="admin">⚙️ Admin — full access (needs approval)</option>
+            </select>
+          </div>
+
+          <div class="role-info">
+            <strong>Role permissions:</strong><br>
+            👤 <b>viewer</b> — Dashboard, History, Threat Feed<br>
+            🔍 <b>analyst</b> — + Evaluate, Simulator<br>
+            ⚙️ <b>admin</b> — Everything + Policies, Audit, Users
+          </div>
+
+          <button class="btn" onclick="doSignup()">Create Account</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MAIN APP ============ -->
+  <div class="app" id="appPage">
+
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-logo">🛡️</div>
+        <div>
+          <div class="topbar-title">FC-03 Risk Engine</div>
+          <div class="topbar-sub">Context-aware access control</div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <span class="live-dot"></span>
+        <span class="live-label">Live</span>
+        <div class="bell-wrap" id="bellWrap" onclick="openAlerts()" title="Admin Alerts">🔔<span class="bell-badge"
+            id="bellBadge">0</span></div>
+        <span class="role-badge" id="roleBadge">ADMIN</span>
+        <div class="avatar" id="avatar">P</div>
+        <span class="user-name" id="userNameTop">Priya</span>
+      </div>
+    </div>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-heading">Navigation</div>
+        <nav id="navMenu"></nav>
+        <div class="sidebar-bottom">
+          <div class="sidebar-user">
+            Signed in as <strong id="sidebarUser">Priya</strong><br>
+            <span id="sidebarEmail" style="font-size:11px;"></span><br>
+            Role: <strong id="sidebarRole">ADMIN</strong><br>
+            <span id="sidebarLimit"></span>
+          </div>
+          <button class="logout-btn" onclick="doLogout()">🚪 Logout</button>
+        </div>
+      </aside>
+
+      <main class="main">
+
+        <!-- DASHBOARD -->
+        <div class="page active" id="page-dashboard">
+          <div class="page-header">
+            <h1 class="page-title" id="greeting">Good morning 👋</h1>
+            <p class="page-sub" id="todayDate">Loading...</p>
+          </div>
+
+          <div class="kpi-grid">
+            <div class="kpi">
+              <div class="kpi-label">Total Requests</div>
+              <div class="kpi-value" id="kpiTotal">0</div>
+              <div class="kpi-delta" id="kpiScope" style="color:var(--muted);">Your requests only</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-label">Allowed</div>
+              <div class="kpi-value" style="color:var(--success);" id="kpiAllowed">0%</div>
+              <div class="kpi-delta delta-up" id="kpiAllowedN">0 events</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-label">Challenged</div>
+              <div class="kpi-value" style="color:var(--warning);" id="kpiChallenged">0%</div>
+              <div class="kpi-delta delta-down" id="kpiChallengedN">0 events</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-label">Restricted / Denied</div>
+              <div class="kpi-value" style="color:var(--danger);" id="kpiDenied">0%</div>
+              <div class="kpi-delta delta-down" id="kpiDeniedN">0 events</div>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-title">📈 Risk Trend (Last 7 Days)</div>
+              <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+            </div>
+            <div class="card">
+              <div class="card-title">🥧 Decision Distribution</div>
+              <div class="chart-wrap"><canvas id="decisionChart"></canvas></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">🔴 Live Activity Feed</div>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>User</th>
+                  <th>Device</th>
+                  <th>Location</th>
+                  <th>Resource</th>
+                  <th>Score</th>
+                  <th>Decision</th>
+                </tr>
+              </thead>
+              <tbody id="liveFeed"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- EVALUATE -->
+        <div class="page" id="page-evaluate">
+          <div class="page-header">
+            <h1 class="page-title">🔍 Evaluate Access Request</h1>
+            <p class="page-sub">Submit context signals to get a risk-based decision</p>
+          </div>
+
+          <div class="eval-grid">
+            <div class="card eval-form">
+              <div class="card-title">Request Details</div>
+
+              <div class="field">
+                <label>👤 User Email</label>
+                <input type="text" id="evUser" readonly />
+              </div>
+
+              <div class="field">
+                <label>💻 Device</label>
+                <div class="radio-cards" id="deviceCards">
+                  <label class="radio-card selected" data-value="Office Laptop">💼 Office Laptop</label>
+                  <label class="radio-card" data-value="Personal Laptop">🏠 Personal Laptop</label>
+                  <label class="radio-card" data-value="New Phone">📱 New Phone</label>
+                  <label class="radio-card" data-value="Unknown Device">❓ Unknown</label>
+                </div>
+              </div>
+
+              <div class="field">
+                <label>📍 Location</label>
+                <select id="evLocation">
+                  <option value="Mumbai, India">🇮🇳 Mumbai, India (trusted)</option>
+                  <option value="Bengaluru, India">🇮🇳 Bengaluru, India (trusted)</option>
+                  <option value="New York, USA">🇺🇸 New York, USA (foreign)</option>
+                  <option value="Lagos, Nigeria">🇳🇬 Lagos, Nigeria (foreign)</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label>⏰ Time (auto-detected)</label>
+                <input type="text" id="evTime" readonly />
+              </div>
+
+              <div class="field">
+                <label>📁 Requested Resource</label>
+                <select id="evResource">
+                  <option value="Normal File">📄 Normal File</option>
+                  <option value="Sensitive Customer Data">🔒 Sensitive Customer Data</option>
+                  <option value="Admin Panel">⚙️ Admin Panel</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label>🔒 Failed Attempts (last hour)</label>
+                <input type="number" id="evFails" value="0" min="0" max="10" />
+              </div>
+
+              <button class="btn" onclick="evaluateRisk()">⚡ Evaluate Risk</button>
+            </div>
+
+            <div class="card" id="resultCard">
+              <div class="card-title">Decision Result</div>
+              <div id="resultEmpty" class="muted-empty">
+                <div style="font-size:60px; margin-bottom:12px;">🛡️</div>
+                <p>Fill the form and click <strong>Evaluate Risk</strong></p>
+              </div>
+              <div id="resultContent" style="display:none;">
+                <div class="score-display">
+                  <div class="score-ring" id="scoreRing"><span class="score-value" id="scoreValue">0</span></div>
+                  <div>
+                    <div class="score-label">Risk Score</div>
+                    <div class="decision-big" id="decisionBig">ALLOW</div>
+                    <div style="font-size:13px; color:var(--muted);" id="recommendedAction">Grant full access</div>
+                  </div>
+                </div>
+
+                <div class="otp-box" id="otpPanel">
+                  <div style="font-weight:700; font-size:14px;">🔐 OTP Verification Required</div>
+                  <p style="font-size:12.5px; color:#92400E; margin-top:6px; line-height:1.6;">
+                    A 6-digit OTP has been sent to <b id="otpEmail"></b>.<br>
+                    Demo OTP: <b id="otpDemo"
+                      style="letter-spacing:.2em; background:#FDE68A; padding:2px 8px; border-radius:5px;"></b>
+                  </p>
+                  <div class="otp-input-row">
+                    <input id="otpInput" maxlength="6" inputmode="numeric" placeholder="••••••" />
+                    <button class="btn" style="width:auto; padding:11px 22px;" onclick="verifyOtp()">Verify</button>
+                  </div>
+                  <div id="otpMsg" style="font-size:12px; margin-top:10px; font-weight:600;"></div>
+                </div>
+
+                <div class="card-title" style="margin-top:20px;">Reasons</div>
+                <ul class="reason-list" id="reasonList"></ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- HISTORY -->
+        <div class="page" id="page-history">
+          <div class="page-header">
+            <h1 class="page-title">📜 Access History</h1>
+            <p class="page-sub" id="historySub">All past access decisions</p>
+          </div>
+          <div class="card">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>User</th>
+                  <th>Device</th>
+                  <th>Location</th>
+                  <th>Resource</th>
+                  <th>Score</th>
+                  <th>Decision</th>
+                </tr>
+              </thead>
+              <tbody id="historyTable"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- POLICIES -->
+        <div class="page" id="page-policies">
+          <div class="page-header">
+            <h1 class="page-title">⚙️ Policies &amp; Weights</h1>
+            <p class="page-sub">Risk signal weights and decision thresholds — the exact model used by the engine</p>
+          </div>
+          <div class="card">
+            <div class="card-title">Risk Signal Weights</div>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Signal</th>
+                  <th>Category</th>
+                  <th>Weight</th>
+                </tr>
+              </thead>
+              <tbody id="policiesTable"></tbody>
+            </table>
+          </div>
+          <div class="card" style="margin-top:20px;">
+            <div class="card-title">Decision Thresholds</div>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Decision</th>
+                  <th>Score Range</th>
+                  <th>Recommended Action</th>
+                </tr>
+              </thead>
+              <tbody id="thresholdsTable"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- SIMULATOR -->
+        <div class="page" id="page-simulator">
+          <div class="page-header">
+            <h1 class="page-title">🎬 Simulator — Priya's Day</h1>
+            <p class="page-sub">Same user. 4 contexts. 4 decisions — computed live by the real engine.</p>
+          </div>
+          <button class="btn" style="max-width:220px; margin-bottom:24px;" onclick="runSimulator()">▶️ Run All
+            Scenarios</button>
+          <div class="timeline" id="simTimeline"></div>
+        </div>
+
+        <!-- THREAT FEED -->
+        <div class="page" id="page-threat">
+          <div class="page-header">
+            <h1 class="page-title">⚠️ Live Threat Feed</h1>
+            <p class="page-sub">Real-time threat intelligence</p>
+          </div>
+          <div class="card" id="threatList"></div>
+        </div>
+
+        <!-- ALERTS -->
+        <div class="page" id="page-alerts">
+          <div class="page-header"
+            style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px;">
+            <div>
+              <h1 class="page-title">🔔 Admin Alerts</h1>
+              <p class="page-sub">Access-limit breaches and high-risk events needing attention</p>
+            </div>
+            <button class="btn btn-secondary" style="width:auto; padding:10px 18px;" onclick="clearAlerts()">Clear
+              All</button>
+          </div>
+          <div class="card" id="alertsList"></div>
+        </div>
+
+        <!-- AUDIT -->
+        <div class="page" id="page-audit">
+          <div class="page-header">
+            <h1 class="page-title">📊 Audit Trail</h1>
+            <p class="page-sub">All admin actions logged</p>
+          </div>
+          <div class="card">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Actor</th>
+                  <th>Action</th>
+                  <th>Entity</th>
+                </tr>
+              </thead>
+              <tbody id="auditTable"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- USERS -->
+        <div class="page" id="page-users">
+          <div class="page-header">
+            <h1 class="page-title">👥 User Management</h1>
+            <p class="page-sub">Add users, approve, suspend, or change roles</p>
+          </div>
+
+          <div class="card"
+            style="margin-bottom:20px; border:1px solid #C7D2FE; background:linear-gradient(135deg,#FFFFFF 0%,#F5F3FF 100%);">
+            <div class="card-title">➕ Add New User (Admin only)</div>
+            <div class="alert alert-error" id="addUserError"></div>
+            <div class="alert alert-success" id="addUserSuccess"></div>
+            <div class="add-user-grid">
+              <div class="field">
+                <label>Full Name</label>
+                <input type="text" id="auName" placeholder="Ravi Kumar" />
+              </div>
+              <div class="field">
+                <label>Email Address</label>
+                <input type="email" id="auEmail" placeholder="ravi@bank.com" />
+              </div>
+              <div class="field">
+                <label>Password</label>
+                <input type="password" id="auPass" placeholder="min 6 characters" />
+              </div>
+              <div class="field">
+                <label>Role</label>
+                <select id="auRole">
+                  <option value="viewer">👤 Viewer — read only</option>
+                  <option value="analyst">🔍 Analyst — evaluate + view</option>
+                  <option value="admin">⚙️ Admin — full access</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Access Limit (risky attempts allowed)</label>
+                <input type="number" id="auLimit" value="3" min="1" max="20" />
+              </div>
+              <div class="field" style="display:flex; align-items:flex-end;">
+                <button class="btn" onclick="addUser()">Create User</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="kpi-grid">
+            <div class="kpi">
+              <div class="kpi-label">Total Users</div>
+              <div class="kpi-value" id="kpiTotalUsers">0</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-label">Active</div>
+              <div class="kpi-value" style="color:var(--success);" id="kpiActiveUsers">0</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-label">Pending</div>
+              <div class="kpi-value" style="color:var(--warning);" id="kpiPendingUsers">0</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-label">Suspended</div>
+              <div class="kpi-value" style="color:var(--danger);" id="kpiSuspendedUsers">0</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">All Users</div>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th>Access Limit</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="usersTable"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ABOUT -->
+        <div class="page" id="page-about">
+          <div class="page-header">
+            <h1 class="page-title">ℹ️ About FC-03</h1>
+            <p class="page-sub">Risk-Based Access Intelligence Engine</p>
+          </div>
+          <div class="card">
+            <h3 style="margin-bottom:12px;">Problem Statement</h3>
+            <p style="color:var(--muted); line-height:1.7; margin-bottom:24px;">
+              Traditional access control uses static roles or permissions. Modern systems require decisions to account
+              for changing context and risk. This engine continuously evaluates whether a particular access request
+              should be allowed.
+            </p>
+            <h3 style="margin-bottom:12px;">Signals Used</h3>
+            <ul style="color:var(--muted); line-height:1.9; padding-left:20px;">
+              <li>User identity</li>
+              <li>Device posture</li>
+              <li>Location</li>
+              <li>Behaviour (failed attempts)</li>
+              <li>Requested resource</li>
+              <li>Access history (strikes)</li>
+              <li>Threat signals</li>
+            </ul>
+            <h3 style="margin:24px 0 12px;">Key Challenge</h3>
+            <p style="color:var(--muted); line-height:1.7;">
+              Make access control context-aware and continuously risk-sensitive, rather than purely role-based.
+            </p>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    /* ===================================================
+       ROLES + PAGES
+       =================================================== */
+    const ROLES = {
+      admin: { pages: ['dashboard', 'evaluate', 'history', 'policies', 'simulator', 'threat', 'alerts', 'audit', 'users', 'about'] },
+      analyst: { pages: ['dashboard', 'evaluate', 'history', 'simulator', 'threat', 'about'] },
+      viewer: { pages: ['dashboard', 'history', 'threat', 'about'] }
+    };
+
+    const PAGE_LABELS = {
+      dashboard: { icon: '🏠', label: 'Dashboard' },
+      evaluate: { icon: '🔍', label: 'Evaluate Access' },
+      history: { icon: '📜', label: 'History' },
+      policies: { icon: '⚙️', label: 'Policies' },
+      simulator: { icon: '🎬', label: 'Simulator' },
+      threat: { icon: '⚠️', label: 'Threat Feed' },
+      alerts: { icon: '🔔', label: 'Admin Alerts' },
+      audit: { icon: '📊', label: 'Audit Trail' },
+      users: { icon: '👥', label: 'User Management' },
+      about: { icon: 'ℹ️', label: 'About' }
+    };
+
+    /* ===================================================
+       STATE
+       =================================================== */
+    let USERS = [
+      { email: 'admin@bank.com', password: 'admin123', role: 'admin', name: 'Priya Sharma', status: 'active', accessLimit: 5, strikes: 0 },
+      { email: 'arjun@bank.com', password: 'analyst123', role: 'analyst', name: 'Arjun Kumar', status: 'active', accessLimit: 3, strikes: 0 },
+      { email: 'kavya@bank.com', password: 'viewer123', role: 'viewer', name: 'Kavya Nair', status: 'active', accessLimit: 3, strikes: 0 },
+      { email: 'priya@bank.com', password: 'priya123', role: 'viewer', name: 'Priya Sharma', status: 'active', accessLimit: 3, strikes: 0 }
+    ];
+
+    let currentUser = null;
+    let adminAlerts = [];
+    let otpCode = null;
+    let otpAttempts = 0;
+    let pendingRequest = null;
+
+    /* Escaping helper — prevents HTML injection through names/emails */
+    const esc = s => String(s).replace(/[&<>"']/g, c => (
+      { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+    ));
+
+    /* ===================================================
+       TABS
+       =================================================== */
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        const t = tab.dataset.tab;
+        document.getElementById('loginForm').style.display = t === 'login' ? 'block' : 'none';
+        document.getElementById('signupForm').style.display = t === 'signup' ? 'block' : 'none';
+      });
+    });
+
+    /* ===================================================
+       AUTH
+       =================================================== */
+    function doLogin() {
+      const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+      const pass = document.getElementById('loginPass').value;
+      const err = document.getElementById('loginError');
+      err.classList.remove('show');
+
+      if (!email || !pass) { showError(err, 'Enter email and password'); return; }
+
+      const user = USERS.find(x => x.email.toLowerCase() === email && x.password === pass);
+      if (!user) { showError(err, 'Invalid email or password'); return; }
+      if (user.status === 'pending') { showError(err, 'Account pending admin approval'); return; }
+      if (user.status === 'suspended') { showError(err, 'Account suspended. Contact admin.'); return; }
+
+      currentUser = user;
+      enterApp();
+    }
+
+    function fillLogin(email, pass) {
+      document.getElementById('loginEmail').value = email;
+      document.getElementById('loginPass').value = pass;
+      document.getElementById('loginEmail').focus();
+    }
+
+    function doSignup() {
+      const name = document.getElementById('suName').value.trim();
+      const email = document.getElementById('suEmail').value.trim().toLowerCase();
+      const pass = document.getElementById('suPass').value;
+      const pass2 = document.getElementById('suPass2').value;
+      const role = document.getElementById('suRole').value;
+
+      const err = document.getElementById('signupError');
+      const ok = document.getElementById('signupSuccess');
+      err.classList.remove('show'); ok.classList.remove('show');
+
+      if (!name || !email || !pass) { showError(err, 'All fields required'); return; }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showError(err, 'Enter a valid email'); return; }
+      if (pass.length < 6) { showError(err, 'Password must be at least 6 characters'); return; }
+      if (pass !== pass2) { showError(err, 'Passwords do not match'); return; }
+      if (USERS.some(x => x.email.toLowerCase() === email)) { showError(err, 'Email already registered'); return; }
+
+      const status = (role === 'admin') ? 'pending' : 'active';
+      USERS.push({ email, password: pass, role, name, status, accessLimit: 3, strikes: 0 });
+
+      ok.textContent = status === 'pending'
+        ? '✅ Signup successful. Admin approval pending for admin role.'
+        : '✅ Signup successful. Please login.';
+      ok.classList.add('show');
+
+      if (status === 'active') {
+        setTimeout(() => {
+          document.querySelector('[data-tab="login"]').click();
+          document.getElementById('loginEmail').value = email;
+        }, 1500);
+      }
+    }
+
+    function showError(el, msg) { el.textContent = '❌ ' + msg; el.classList.add('show'); }
+
+    /* ===================================================
+       ENTER APP
+       =================================================== */
+    function enterApp() {
+      document.getElementById('authPage').style.display = 'none';
+      document.getElementById('appPage').classList.add('show');
+
+      document.getElementById('userNameTop').textContent = currentUser.name.split(' ')[0];
+      document.getElementById('avatar').textContent = currentUser.name[0].toUpperCase();
+      const rb = document.getElementById('roleBadge');
+      rb.textContent = currentUser.role.toUpperCase();
+      rb.className = 'role-badge role-' + currentUser.role;
+
+      document.getElementById('sidebarUser').textContent = currentUser.name;
+      document.getElementById('sidebarEmail').textContent = currentUser.email;
+      document.getElementById('sidebarRole').textContent = currentUser.role.toUpperCase();
+      document.getElementById('evUser').value = currentUser.email;
+      document.getElementById('historySub').textContent =
+        currentUser.role === 'admin' ? 'All users · organisation-wide' : 'Your requests only';
+
+      updateSidebarLimit();
+
+      const hour = new Date().getHours();
+      const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+      document.getElementById('greeting').textContent = `${greet}, ${currentUser.name.split(' ')[0]} 👋`;
+      document.getElementById('todayDate').textContent = new Date().toLocaleDateString('en-IN', {
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+      });
+      refreshEvalTime();
+
+      document.getElementById('bellWrap').style.display = (currentUser.role === 'admin') ? 'block' : 'none';
+
+      buildSidebar();
+      renderAll();
+      showPage(ROLES[currentUser.role].pages[0]);
+      toast(`Welcome, ${currentUser.name.split(' ')[0]}! 🎉`);
+    }
+
+    function refreshEvalTime() {
+      const now = new Date();
+      document.getElementById('evTime').value =
+        now.toLocaleTimeString('en-IN') + (isOddHour(now.getHours()) ? '  ⚠ odd hours' : '');
+    }
+
+    function updateSidebarLimit() {
+      const u = USERS.find(x => x.email === currentUser.email);
+      const el = document.getElementById('sidebarLimit');
+      if (!u) { el.textContent = ''; return; }
+      const over = u.strikes >= u.accessLimit;
+      el.innerHTML = `Risk strikes: <strong style="color:${over ? 'var(--danger)' : 'var(--muted)'}">${u.strikes} / ${u.accessLimit}</strong>`;
+    }
+
+    /* ===================================================
+       SIDEBAR / NAV
+       =================================================== */
+    function buildSidebar() {
+      const nav = document.getElementById('navMenu');
+      nav.innerHTML = '';
+      ROLES[currentUser.role].pages.forEach(key => {
+        const p = PAGE_LABELS[key];
+        const div = document.createElement('div');
+        div.className = 'nav-item';
+        div.dataset.page = key;
+        div.innerHTML = `<span class="nav-icon">${p.icon}</span><span>${p.label}</span>` +
+          (key === 'alerts' ? `<span class="nav-badge" id="navAlertBadge" style="display:none;">0</span>` : '');
+        div.onclick = () => showPage(key);
+        nav.appendChild(div);
+      });
+      renderAlerts();
+    }
+
+    function showPage(key) {
+      if (!ROLES[currentUser.role].pages.includes(key)) { toast('🚫 Access Denied'); return; }
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      const nav = document.querySelector(`.nav-item[data-page="${key}"]`);
+      if (nav) nav.classList.add('active');
+      document.getElementById('page-' + key).classList.add('active');
+
+      if (key === 'evaluate') refreshEvalTime();
+
+      if (key === 'alerts') {
+        adminAlerts.forEach(a => a.read = true);
+        renderAlerts();
+      }
+    }
+
+    /* ===================================================
+       DATA
+       =================================================== */
+    let accessLogs = [
+      { time: '10:00 AM', user: 'priya@bank.com', device: 'Office Laptop', location: 'Mumbai, India', resource: 'Normal File', score: 0, decision: 'ALLOW' },
+      { time: '08:00 PM', user: 'priya@bank.com', device: 'Personal Laptop', location: 'Mumbai, India', resource: 'Sensitive Customer Data', score: 5, decision: 'ALLOW' },
+      { time: '02:00 AM', user: 'priya@bank.com', device: 'New Phone', location: 'New York, USA', resource: 'Sensitive Customer Data', score: 90, decision: 'DENY' },
+      { time: '03:00 PM', user: 'priya@bank.com', device: 'Office Laptop', location: 'Mumbai, India', resource: 'Admin Panel', score: 5, decision: 'ALLOW' },
+      { time: '11:15 AM', user: 'arjun@bank.com', device: 'Office Laptop', location: 'Mumbai, India', resource: 'Normal File', score: 0, decision: 'ALLOW' },
+      { time: '09:40 PM', user: 'kavya@bank.com', device: 'Personal Laptop', location: 'Mumbai, India', resource: 'Normal File', score: 0, decision: 'ALLOW' }
+    ];
+
+    let auditLogs = [
+      { time: '10:32 AM', actor: 'admin@bank.com', action: 'UPDATE_ROLE', entity: 'user:kavya@bank.com' },
+      { time: '09:15 AM', actor: 'arjun@bank.com', action: 'EVALUATE', entity: 'access:1234' },
+      { time: 'Yesterday', actor: 'admin@bank.com', action: 'APPROVE_USER', entity: 'user:new_hire@bank.com' }
+    ];
+
+    /* Single source of truth for the model */
+    const POLICIES = [
+      { key: 'Office laptop (managed)', weight: -10, category: 'device', test: c => c.device === 'Office Laptop' },
+      { key: 'Personal laptop', weight: 5, category: 'device', test: c => c.device === 'Personal Laptop' },
+      { key: 'New phone', weight: 25, category: 'device', test: c => c.device === 'New Phone' },
+      { key: 'Unknown device', weight: 35, category: 'device', test: c => c.device === 'Unknown Device' },
+      { key: 'Trusted location (India)', weight: -10, category: 'location', test: c => c.location.includes('India') },
+      { key: 'Foreign location', weight: 30, category: 'location', test: c => !c.location.includes('India') },
+      { key: 'Normal hours (06–23)', weight: -5, category: 'time', test: c => !isOddHour(c.hour) },
+      { key: 'Odd hours (00–05)', weight: 15, category: 'time', test: c => isOddHour(c.hour) },
+      { key: 'Sensitive resource', weight: 20, category: 'resource', test: c => c.resource === 'Sensitive Customer Data' },
+      { key: 'Admin resource', weight: 30, category: 'resource', test: c => c.resource === 'Admin Panel' },
+      { key: 'Failed attempts ≥ 3', weight: 20, category: 'behaviour', test: c => c.fails >= 3 }
+    ];
+
+    const THRESHOLDS = [
+      { decision: 'ALLOW', min: 0, max: 25, action: 'Grant full access' },
+      { decision: 'CHALLENGE', min: 26, max: 50, action: 'Request OTP / MFA' },
+      { decision: 'RESTRICT', min: 51, max: 75, action: 'Limited access + log' },
+      { decision: 'DENY', min: 76, max: 100, action: 'Block access + alert admin' }
+    ];
+
+    function isOddHour(h) { return h >= 0 && h <= 5; }
+
+    /* ---------- THE RISK ENGINE (pure, shared by eval + simulator) ---------- */
+    function computeRisk(ctx) {
+      let score = 0;
+      const reasons = [];
+
+      POLICIES.forEach(p => {
+        if (p.test(ctx)) {
+          score += p.weight;
+          reasons.push(`${p.key} (${p.weight > 0 ? '+' : ''}${p.weight})`);
+        }
+      });
+
+      score = Math.max(0, Math.min(100, score));
+
+      let decision = 'ALLOW', action = 'Grant full access';
+      for (const t of THRESHOLDS) {
+        if (score >= t.min && score <= t.max) {
+          decision = t.decision; action = t.action; break;
+        }
+      }
+      return { score, decision, action, reasons };
+    }
+
+    /* ===================================================
+       RENDER
+       =================================================== */
+    function renderAll() {
+      renderKpis();
+      renderFeed();
+      renderHistory();
+      renderPolicies();
+      renderThresholds();
+      renderThreats();
+      renderUsers();
+      renderAudit();
+      renderAlerts();
+      setTimeout(renderCharts, 100);
+    }
+
+    function visibleLogs() {
+      return currentUser.role === 'admin'
+        ? accessLogs
+        : accessLogs.filter(l => l.user === currentUser.email);
+    }
+
+    function renderKpis() {
+      const logs = visibleLogs();
+      const total = logs.length;
+      const nAllow = logs.filter(l => l.decision === 'ALLOW').length;
+      const nChal = logs.filter(l => l.decision === 'CHALLENGE').length;
+      const nDeny = logs.filter(l => l.decision === 'RESTRICT' || l.decision === 'DENY').length;
+      const pct = n => total ? Math.round(n / total * 100) + '%' : '0%';
+
+      document.getElementById('kpiTotal').textContent = total;
+      document.getElementById('kpiAllowed').textContent = pct(nAllow);
+      document.getElementById('kpiChallenged').textContent = pct(nChal);
+      document.getElementById('kpiDenied').textContent = pct(nDeny);
+      document.getElementById('kpiAllowedN').textContent = nAllow + ' events';
+      document.getElementById('kpiChallengedN').textContent = nChal + ' events';
+      document.getElementById('kpiDeniedN').textContent = nDeny + ' events';
+      document.getElementById('kpiScope').textContent = currentUser.role === 'admin'
+        ? 'All users · organisation-wide'
+        : 'Your requests only (' + currentUser.email + ')';
+    }
+
+    function badge(d) {
+      const map = { ALLOW: 'badge-allow', CHALLENGE: 'badge-challenge', RESTRICT: 'badge-restrict', DENY: 'badge-deny' };
+      return `<span class="decision-badge ${map[d]}">${d}</span>`;
+    }
+
+    function logRows(logs) {
+      if (!logs.length) {
+        return `<tr><td colspan="7" style="text-align:center; padding:36px; color:var(--muted);">No access events yet.</td></tr>`;
+      }
+      return logs.map(l => `
+    <tr>
+      <td>${esc(l.time)}</td>
+      <td>${esc(l.user)}</td>
+      <td>${esc(l.device)}</td>
+      <td>${esc(l.location)}</td>
+      <td>${esc(l.resource)}</td>
+      <td><b>${l.score}</b></td>
+      <td>${badge(l.decision)}</td>
+    </tr>`).join('');
+    }
+
+    function renderFeed() { document.getElementById('liveFeed').innerHTML = logRows(visibleLogs()); }
+    function renderHistory() { document.getElementById('historyTable').innerHTML = logRows(visibleLogs()); }
+
+    function renderPolicies() {
+      document.getElementById('policiesTable').innerHTML = POLICIES.map(p => `
+    <tr>
+      <td><b>${esc(p.key)}</b></td>
+      <td>${esc(p.category)}</td>
+      <td style="color:${p.weight < 0 ? 'var(--success)' : 'var(--danger)'}; font-weight:700;">
+        ${p.weight > 0 ? '+' : ''}${p.weight}
+      </td>
+    </tr>`).join('');
+    }
+
+    function renderThresholds() {
+      document.getElementById('thresholdsTable').innerHTML = THRESHOLDS.map(t => `
+    <tr>
+      <td>${badge(t.decision)}</td>
+      <td><b>${t.min} – ${t.max}</b></td>
+      <td>${esc(t.action)}</td>
+    </tr>`).join('');
+    }
+
+    function renderThreats() {
+      const threats = [
+        { severity: 'CRITICAL', indicator: '45.142.212.61', source: 'AlienVault OTX', desc: 'Known APT C2 server' },
+        { severity: 'HIGH', indicator: '185.220.101.5', source: 'AbuseIPDB', desc: 'Tor exit node' },
+        { severity: 'HIGH', indicator: 'fake-bank.com', source: 'PhishTank', desc: 'Phishing domain' },
+        { severity: 'MEDIUM', indicator: '91.243.44.12', source: 'Internal', desc: 'Suspicious scanning' }
+      ];
+      const colors = {
+        CRITICAL: 'background:#FEE2E2; color:#991B1B;',
+        HIGH: 'background:#FFEDD5; color:#9A3412;',
+        MEDIUM: 'background:#FEF3C7; color:#92400E;',
+        LOW: 'background:#D1FAE5; color:#065F46;'
+      };
+      document.getElementById('threatList').innerHTML = threats.map(t => `
+    <div style="padding:16px; border-bottom:1px solid #F1F5F9; display:flex; justify-content:space-between; align-items:center; gap:12px;">
+      <div>
+        <span style="padding:4px 10px; border-radius:999px; font-size:11px; font-weight:700; letter-spacing:.05em; ${colors[t.severity]}">${t.severity}</span>
+        <div style="margin-top:8px; font-weight:600;">${esc(t.indicator)}</div>
+        <div style="color:var(--muted); font-size:12px;">${esc(t.source)} · ${esc(t.desc)}</div>
+      </div>
+      <button class="btn btn-secondary" style="width:auto; padding:8px 16px; font-size:12px;">Investigate</button>
+    </div>`).join('');
+    }
+
+    function renderUsers() {
+      document.getElementById('usersTable').innerHTML = USERS.map(u => {
+        const strikes = u.strikes || 0;
+        const limit = u.accessLimit || 3;
+        const over = strikes >= limit;
+        return `
+    <tr>
+      <td><b>${esc(u.name)}</b></td>
+      <td>${esc(u.email)}</td>
+      <td><span class="role-badge role-${esc(u.role)}" style="font-size:10px; padding:4px 10px;">${esc(u.role)}</span></td>
+      <td>
+        <span style="padding:4px 10px; border-radius:999px; font-size:11px; font-weight:600;
+          background:${u.status === 'active' ? '#D1FAE5' : u.status === 'pending' ? '#FEF3C7' : '#FEE2E2'};
+          color:${u.status === 'active' ? '#065F46' : u.status === 'pending' ? '#92400E' : '#991B1B'};">
+          ${esc(u.status)}
+        </span>
+      </td>
+      <td>
+        <span style="font-weight:700; color:${over ? 'var(--danger)' : 'var(--muted)'};">${strikes} / ${limit}</span>
+        ${over ? '<span style="font-size:10px; color:var(--danger); font-weight:700;"> ⚠ LIMIT</span>' : ''}
+      </td>
+      <td style="white-space:nowrap;">
+        ${u.status === 'pending'
+            ? `<button class="btn" style="width:auto; padding:6px 12px; font-size:11px; margin-right:6px;" onclick="approveUser('${esc(u.email)}')">✅ Approve</button>`
+            : ''}
+        ${u.email !== currentUser.email
+            ? `<button class="btn btn-secondary" style="width:auto; padding:6px 12px; font-size:11px;" onclick="toggleUser('${esc(u.email)}')">${u.status === 'suspended' ? 'Activate' : 'Suspend'}</button>`
+            : ''}
+      </td>
+    </tr>`;
+      }).join('');
+
+      document.getElementById('kpiTotalUsers').textContent = USERS.length;
+      document.getElementById('kpiActiveUsers').textContent = USERS.filter(u => u.status === 'active').length;
+      document.getElementById('kpiPendingUsers').textContent = USERS.filter(u => u.status === 'pending').length;
+      document.getElementById('kpiSuspendedUsers').textContent = USERS.filter(u => u.status === 'suspended').length;
+    }
+
+    /* ===================================================
+       USER MANAGEMENT
+       =================================================== */
+    function addUser() {
+      const name = document.getElementById('auName').value.trim();
+      const email = document.getElementById('auEmail').value.trim().toLowerCase();
+      const pass = document.getElementById('auPass').value;
+      const role = document.getElementById('auRole').value;
+      const limit = parseInt(document.getElementById('auLimit').value, 10) || 3;
+
+      const err = document.getElementById('addUserError');
+      const ok = document.getElementById('addUserSuccess');
+      err.classList.remove('show'); ok.classList.remove('show');
+
+      if (!name || !email || !pass) { showError(err, 'Name, email and password are required'); return; }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showError(err, 'Enter a valid email address'); return; }
+      if (pass.length < 6) { showError(err, 'Password must be at least 6 characters'); return; }
+      if (USERS.some(x => x.email.toLowerCase() === email)) { showError(err, 'This email is already registered'); return; }
+
+      USERS.push({ email, password: pass, role, name, status: 'active', accessLimit: limit, strikes: 0 });
+
+      ok.textContent = `✅ User "${name}" created as ${role.toUpperCase()}. Login: ${email} / ${pass}`;
+      ok.classList.add('show');
+
+      logAudit('CREATE_USER', 'user:' + email);
+
+      document.getElementById('auName').value = '';
+      document.getElementById('auEmail').value = '';
+      document.getElementById('auPass').value = '';
+      document.getElementById('auLimit').value = 3;
+
+      renderUsers();
+      toast('User created ✅');
+    }
+
+    function approveUser(email) {
+      const u = USERS.find(x => x.email === email);
+      if (!u) return;
+      u.status = 'active';
+      renderUsers();
+      logAudit('APPROVE_USER', 'user:' + email);
+      toast('User approved ✅');
+    }
+
+    function toggleUser(email) {
+      const u = USERS.find(x => x.email === email);
+      if (!u) return;
+      u.status = u.status === 'suspended' ? 'active' : 'suspended';
+      renderUsers();
+      logAudit(u.status === 'suspended' ? 'SUSPEND_USER' : 'ACTIVATE_USER', 'user:' + email);
+      toast(`User ${u.status}`);
+    }
+
+    /* ===================================================
+       AUDIT
+       =================================================== */
+    function logAudit(action, entity) {
+      auditLogs.unshift({
+        time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+        actor: currentUser ? currentUser.email : 'system',
+        action, entity
+      });
+      renderAudit();
+    }
+
+    function renderAudit() {
+      document.getElementById('auditTable').innerHTML = auditLogs.map(l => `
+    <tr>
+      <td>${esc(l.time)}</td>
+      <td><b>${esc(l.actor)}</b></td>
+      <td>${esc(l.action)}</td>
+      <td><code style="font-size:12px; color:var(--muted);">${esc(l.entity)}</code></td>
+    </tr>`).join('');
+    }
+
+    /* ===================================================
+       ADMIN ALERTS
+       =================================================== */
+    function pushAlert(level, title, detail) {
+      adminAlerts.unshift({
+        level, title, detail,
+        time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+        read: false
+      });
+      renderAlerts();
+    }
+
+    function renderAlerts() {
+      const list = document.getElementById('alertsList');
+      if (!list) return;
+
+      if (!adminAlerts.length) {
+        list.innerHTML = `<div class="muted-empty">
+      <div style="font-size:48px; margin-bottom:10px;">✅</div>
+      <p>No alerts right now. All clear.</p>
+    </div>`;
+      } else {
+        const icons = { critical: '🚨', warning: '⚠️', info: 'ℹ️' };
+        list.innerHTML = adminAlerts.map(a => `
+      <div class="alert-item alert-${a.level}">
+        <div class="alert-icon">${icons[a.level] || 'ℹ️'}</div>
+        <div style="flex:1;">
+          <div class="alert-title">${esc(a.title)}</div>
+          <div class="alert-detail">${esc(a.detail)}</div>
+        </div>
+        <div class="alert-time">${esc(a.time)}</div>
+      </div>`).join('');
+      }
+
+      const unread = adminAlerts.filter(a => !a.read).length;
+      const bb = document.getElementById('bellBadge');
+      if (bb) { bb.textContent = unread; bb.style.display = unread ? 'flex' : 'none'; }
+      const nb = document.getElementById('navAlertBadge');
+      if (nb) { nb.textContent = unread; nb.style.display = unread ? 'inline-block' : 'none'; }
+    }
+
+    function openAlerts() {
+      if (ROLES[currentUser.role].pages.includes('alerts')) showPage('alerts');
+    }
+
+    function clearAlerts() {
+      adminAlerts = [];
+      renderAlerts();
+      toast('Alerts cleared');
+    }
+
+    /* ===================================================
+       EVALUATE FORM
+       =================================================== */
+    function getSelectedDevice() {
+      const el = document.querySelector('.radio-card.selected');
+      return el ? el.dataset.value : 'Office Laptop';
+    }
+
+    document.querySelectorAll('.radio-card').forEach(c => {
+      c.onclick = () => {
+        document.querySelectorAll('.radio-card').forEach(x => x.classList.remove('selected'));
+        c.classList.add('selected');
+      };
+    });
+
+    function evaluateRisk() {
+      refreshEvalTime();
+
+      const ctx = {
+        device: getSelectedDevice(),
+        location: document.getElementById('evLocation').value,
+        resource: document.getElementById('evResource').value,
+        fails: parseInt(document.getElementById('evFails').value, 10) || 0,
+        hour: new Date().getHours()
+      };
+
+      const result = computeRisk(ctx);
+      const full = Object.assign({}, ctx, result);
+      pendingRequest = full;
+
+      document.getElementById('resultEmpty').style.display = 'none';
+      document.getElementById('resultContent').style.display = 'block';
+      document.getElementById('otpPanel').style.display = 'none';
+      document.getElementById('otpMsg').textContent = '';
+
+      paintResult(full);
+
+      if (full.decision === 'CHALLENGE') {
+        startOtp();
+      } else {
+        finalizeDecision(full);
+      }
+    }
+
+    function paintResult(ctx) {
+      const color = ctx.decision === 'ALLOW' ? 'var(--success)'
+        : ctx.decision === 'CHALLENGE' ? 'var(--warning)'
+          : ctx.decision === 'RESTRICT' ? 'var(--caution)'
+            : 'var(--danger)';
+      const deg = (ctx.score / 100) * 360;
+      document.getElementById('scoreRing').style.background =
+        `conic-gradient(${color} 0deg ${deg}deg, #F1F5F9 ${deg}deg 360deg)`;
+
+      document.getElementById('scoreValue').textContent = ctx.score;
+      const db = document.getElementById('decisionBig');
+      db.textContent = ctx.decision;
+      db.className = 'decision-big decision-' + ctx.decision.toLowerCase();
+      document.getElementById('recommendedAction').textContent = ctx.action;
+      document.getElementById('reasonList').innerHTML = ctx.reasons.map(r => `<li>${esc(r)}</li>`).join('');
+    }
+
+    /* ---------- OTP (CHALLENGE band) ---------- */
+    function startOtp() {
+      // cryptographically stronger than Math.random for a demo
+      const buf = new Uint32Array(1);
+      crypto.getRandomValues(buf);
+      otpCode = String(100000 + (buf[0] % 900000));
+      otpAttempts = 0;
+
+      document.getElementById('otpPanel').style.display = 'block';
+      document.getElementById('otpEmail').textContent = currentUser.email;
+      document.getElementById('otpDemo').textContent = otpCode;
+      document.getElementById('otpInput').value = '';
+      const msg = document.getElementById('otpMsg');
+      msg.textContent = ''; msg.style.color = '';
+
+      toast('📧 OTP sent to ' + currentUser.email);
+    }
+
+    function verifyOtp() {
+      const val = document.getElementById('otpInput').value.trim();
+      const msg = document.getElementById('otpMsg');
+      if (!pendingRequest || !otpCode) return;
+
+      if (val === otpCode) {
+        msg.style.color = 'var(--success)';
+        msg.textContent = '✅ OTP verified — access granted';
+
+        const ctx = pendingRequest;
+        ctx.decision = 'ALLOW';
+        ctx.action = 'Grant full access (OTP verified)';
+        ctx.reasons = ctx.reasons.concat(['OTP verified successfully ✓']);
+        paintResult(ctx);
+
+        document.getElementById('otpPanel').style.display = 'none';
+        finalizeDecision(ctx);
+
+        pendingRequest = null; otpCode = null;
+      } else {
+        otpAttempts++;
+        msg.style.color = 'var(--danger)';
+        msg.textContent = `❌ Invalid OTP (attempt ${otpAttempts}/3)`;
+
+        if (otpAttempts >= 3) {
+          const ctx = pendingRequest;
+          ctx.decision = 'DENY';
+          ctx.action = 'Block access + alert admin';
+          ctx.reasons = ctx.reasons.concat(['OTP failed 3 times → escalated to DENY']);
+          paintResult(ctx);
+
+          document.getElementById('otpPanel').style.display = 'none';
+          finalizeDecision(ctx);
+
+          pendingRequest = null; otpCode = null;
+        }
+      }
+    }
+
+    /* ---------- FINALIZE: log, strikes, alerts ---------- */
+    function finalizeDecision(ctx) {
+      const time = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+
+      accessLogs.unshift({
+        time,
+        user: currentUser.email,
+        device: ctx.device,
+        location: ctx.location,
+        resource: ctx.resource,
+        score: ctx.score,
+        decision: ctx.decision
+      });
+
+      renderFeed();
+      renderHistory();
+      renderKpis();
+
+      const u = USERS.find(x => x.email === currentUser.email);
+
+      if (u && (ctx.decision === 'RESTRICT' || ctx.decision === 'DENY')) {
+        u.strikes = (u.strikes || 0) + 1;
+
+        if (ctx.decision === 'DENY') {
+          pushAlert('critical',
+            `🚫 Access DENIED — ${u.name}`,
+            `${u.email} · ${ctx.device} · ${ctx.location} · ${ctx.resource} · Score ${ctx.score}`);
+        } else {
+          pushAlert('warning',
+            `⚠️ Access RESTRICTED — ${u.name}`,
+            `${u.email} · ${ctx.device} · ${ctx.location} · ${ctx.resource} · Score ${ctx.score}`);
+        }
+
+        if (u.strikes >= u.accessLimit) {
+          pushAlert('critical',
+            `🚨 ACCESS LIMIT CROSSED — ${u.name} (${u.strikes}/${u.accessLimit})`,
+            `User ${u.email} (role: ${u.role}) has exceeded the allowed risky attempts. Immediate admin review required.`);
+        }
+
+        updateSidebarLimit();
+        renderUsers();
+        logAudit('RISK_DECISION', `access:${u.email}:${ctx.decision}`);
+      }
+
+      toast(`${ctx.decision} — Score: ${ctx.score}`);
+      if (currentUser.role !== 'admin' && (ctx.decision === 'RESTRICT' || ctx.decision === 'DENY')) {
+        setTimeout(() => toast('🔔 Admin has been notified'), 1200);
+      }
+    }
+
+    /* ===================================================
+       SIMULATOR — uses the REAL engine
+       =================================================== */
+    const SCENARIOS = [
+      { time: '10:00 AM', hour: 10, device: 'Office Laptop', location: 'Mumbai, India', resource: 'Normal File' },
+      { time: '08:00 PM', hour: 20, device: 'Personal Laptop', location: 'Mumbai, India', resource: 'Sensitive Customer Data' },
+      { time: '02:00 AM', hour: 2, device: 'New Phone', location: 'New York, USA', resource: 'Sensitive Customer Data' },
+      { time: '03:00 PM', hour: 15, device: 'Office Laptop', location: 'Mumbai, India', resource: 'Admin Panel' }
+    ];
+
+    function runSimulator() {
+      const colors = { ALLOW: 'var(--success)', CHALLENGE: 'var(--warning)', RESTRICT: 'var(--caution)', DENY: 'var(--danger)' };
+
+      document.getElementById('simTimeline').innerHTML = SCENARIOS.map((s, i) => {
+        const r = computeRisk({ device: s.device, location: s.location, resource: s.resource, fails: 0, hour: s.hour });
+        return `
+    <div class="timeline-item" style="animation:fadeIn .3s ease ${i * 0.1}s both;">
+      <div class="timeline-dot" style="background:${colors[r.decision]};"></div>
+      <div class="timeline-card">
+        <div class="timeline-time">${esc(s.time)}</div>
+        <div class="timeline-title">${esc(s.device)} · ${esc(s.location)}</div>
+        <div class="timeline-meta">${esc(s.resource)} · Score: <b>${r.score}</b> · ${esc(r.action)}</div>
+        <div style="margin-top:10px;">${badge(r.decision)}</div>
+        <ul class="reason-list" style="margin:10px 0 0;">
+          ${r.reasons.map(x => `<li>${esc(x)}</li>`).join('')}
+        </ul>
+      </div>
+    </div>`;
+      }).join('');
+
+      toast('All 4 scenarios executed ✅');
+    }
+
+    /* ===================================================
+       CHARTS
+       =================================================== */
+    function renderCharts() {
+      const t = document.getElementById('trendChart');
+      const d = document.getElementById('decisionChart');
+      if (!t || !d) return;
+
+      if (t.chartInstance) t.chartInstance.destroy();
+      if (d.chartInstance) d.chartInstance.destroy();
+
+      t.chartInstance = new Chart(t, {
+        type: 'line',
+        data: {
+          labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+          datasets: [{
+            label: 'Avg Risk Score',
+            data: [22, 35, 18, 42, 28, 55, 30],
+            borderColor: '#6366F1',
+            backgroundColor: 'rgba(99,102,241,.1)',
+            fill: true, tension: .4, borderWidth: 3,
+            pointBackgroundColor: '#6366F1', pointRadius: 5, pointHoverRadius: 7
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, animation: { duration: 500 },
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true, max: 100, grid: { color: '#F1F5F9' } }, x: { grid: { display: false } } }
+        }
+      });
+
+      const counts = ['ALLOW', 'CHALLENGE', 'RESTRICT', 'DENY'].map(dc =>
+        accessLogs.filter(l => l.decision === dc).length
+      );
+
+      d.chartInstance = new Chart(d, {
+        type: 'doughnut',
+        data: {
+          labels: ['Allow', 'Challenge', 'Restrict', 'Deny'],
+          datasets: [{
+            data: counts.some(c => c > 0) ? counts : [0, 0, 0, 0],
+            backgroundColor: ['#10B981', '#F59E0B', '#F97316', '#EF4444'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, cutout: '65%', animation: { duration: 500 },
+          plugins: { legend: { position: 'bottom', labels: { padding: 16, font: { family: 'Inter', size: 12 }, usePointStyle: true } } }
+        }
+      });
+    }
+
+    /* ===================================================
+       TOAST
+       =================================================== */
+    function toast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.add('show');
+      clearTimeout(el._t);
+      el._t = setTimeout(() => el.classList.remove('show'), 2500);
+    }
+
+    /* ===================================================
+       LOGOUT
+       =================================================== */
+    function doLogout() {
+      currentUser = null;
+      pendingRequest = null;
+      otpCode = null;
+      document.getElementById('appPage').classList.remove('show');
+      document.getElementById('authPage').style.display = 'grid';
+      document.getElementById('loginEmail').value = 'admin@bank.com';
+      document.getElementById('loginPass').value = 'admin123';
+      toast('Logged out');
+    }
+
+    /* ===================================================
+       KEYBOARD SHORTCUTS
+       =================================================== */
+    document.getElementById('loginPass').addEventListener('keypress', e => {
+      if (e.key === 'Enter') doLogin();
+    });
+    document.getElementById('otpInput').addEventListener('keypress', e => {
+      if (e.key === 'Enter') verifyOtp();
+    });
+  </script>
+</body>
+
+</html>
