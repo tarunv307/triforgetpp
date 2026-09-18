@@ -1595,6 +1595,66 @@
           </div>
         </div>
 
+        <!-- FIREWALL WAF -->
+        <div class="page" id="page-firewall">
+          <div class="page-header">
+            <h1 class="page-title">🛡️ Firewall (WAF)</h1>
+            <p class="page-sub">Monitor and block malicious traffic</p>
+          </div>
+          
+          <div class="kpi-grid">
+            <div class="kpi">
+              <div class="kpi-label">Blocked Today</div>
+              <div class="kpi-value" id="kpiWafBlocked" style="color:var(--danger)">0</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-label">Active Block Rules</div>
+              <div class="kpi-value" id="kpiWafRules">0</div>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="card" style="grid-column: span 2;">
+              <div class="row-between">
+                <div class="card-title">Threat Log (Intercepted Attacks)</div>
+                <button class="btn btn-secondary" style="padding:6px 12px;" onclick="wafRefresh()">🔄 Refresh</button>
+              </div>
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>IP Address</th>
+                    <th>Method</th>
+                    <th>Path</th>
+                    <th>Reason</th>
+                  </tr>
+                </thead>
+                <tbody id="wafLogTable"></tbody>
+              </table>
+            </div>
+
+            <div class="card" style="grid-column: span 2;">
+              <div class="card-title">🚫 Access Control List (ACL)</div>
+              <div style="display:flex; gap:10px; margin-bottom:16px;">
+                <input type="text" id="wafIp" placeholder="IP Address (e.g. 192.168.1.5)" style="flex:1; padding:8px 12px; border:1px solid var(--border); border-radius:8px;" />
+                <input type="text" id="wafReason" placeholder="Reason (e.g. Suspicious)" style="flex:1; padding:8px 12px; border:1px solid var(--border); border-radius:8px;" />
+                <button class="btn" style="width:auto;" onclick="wafAddRule()">Block IP</button>
+              </div>
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Blocked IP</th>
+                    <th>Reason</th>
+                    <th>Added By</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="wafRulesTable"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
         <!-- ABOUT -->
         <div class="page" id="page-about">
           <div class="page-header">
@@ -1636,7 +1696,7 @@
        ROLES + PAGES
        =================================================== */
     const ROLES = {
-      admin: { pages: ['dashboard', 'evaluate', 'history', 'policies', 'simulator', 'threat', 'alerts', 'audit', 'users', 'about'] },
+      admin: { pages: ['dashboard', 'evaluate', 'history', 'policies', 'simulator', 'threat', 'alerts', 'audit', 'users', 'firewall', 'about'] },
       analyst: { pages: ['dashboard', 'evaluate', 'history', 'simulator', 'threat', 'about'] },
       viewer: { pages: ['dashboard', 'history', 'threat', 'about'] }
     };
@@ -1651,6 +1711,7 @@
       alerts: { icon: '🔔', label: 'Admin Alerts' },
       audit: { icon: '📊', label: 'Audit Trail' },
       users: { icon: '👥', label: 'User Management' },
+      firewall: { icon: '🛡️', label: 'Firewall (WAF)' },
       about: { icon: 'ℹ️', label: 'About' }
     };
 
@@ -2438,6 +2499,86 @@
       clearTimeout(el._t);
       el._t = setTimeout(() => el.classList.remove('show'), 2500);
     }
+
+    /* ===================================================
+       FIREWALL (WAF)
+       =================================================== */
+    async function apiFetch(path, options = {}) {
+      const res = await fetch('http://localhost:5000/api' + path, {
+        headers: { 'Content-Type': 'application/json' },
+        ...options
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    }
+
+    async function wafRefresh() {
+      try {
+        const logs  = await apiFetch('/firewall/logs');
+        const rules = await apiFetch('/firewall/rules');
+        
+        document.getElementById('kpiWafBlocked').textContent = logs.length;
+        document.getElementById('kpiWafRules').textContent = rules.length;
+        
+        const lt = document.getElementById('wafLogTable');
+        lt.innerHTML = !logs.length ? '<tr><td colspan="5" style="text-align:center;color:var(--muted)">No intercepted attacks.</td></tr>' : logs.map(l => `
+          <tr>
+            <td>${new Date(l.timestamp).toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'})}</td>
+            <td><code style="font-size:12px;background:#FEE2E2;color:#991B1B;padding:2px 6px;border-radius:4px;">${esc(l.ip_address)}</code></td>
+            <td>${esc(l.method)}</td>
+            <td>${esc(l.path)}</td>
+            <td style="color:var(--danger);font-weight:600;">${esc(l.reason)}</td>
+          </tr>
+        `).join('');
+
+        const rt = document.getElementById('wafRulesTable');
+        rt.innerHTML = !rules.length ? '<tr><td colspan="4" style="text-align:center;color:var(--muted)">No IPs blocked.</td></tr>' : rules.map(r => `
+          <tr>
+            <td><b>${esc(r.ip_address)}</b></td>
+            <td>${esc(r.reason)}</td>
+            <td>${esc(r.created_by)}</td>
+            <td><button class="btn btn-secondary" style="padding:4px 8px;font-size:11px;" onclick="wafRemoveRule('${r.id}')">Unblock</button></td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function wafAddRule() {
+      const ip_address = document.getElementById('wafIp').value.trim();
+      const reason = document.getElementById('wafReason').value.trim();
+      if (!ip_address) return toast('IP Address is required');
+      
+      try {
+        await apiFetch('/firewall/rules', {
+          method: 'POST',
+          body: JSON.stringify({ ip_address, reason })
+        });
+        document.getElementById('wafIp').value = '';
+        document.getElementById('wafReason').value = '';
+        toast('IP Blocked 🚫');
+        wafRefresh();
+      } catch (err) {
+        toast('Error: ' + err.message);
+      }
+    }
+
+    async function wafRemoveRule(id) {
+      try {
+        await apiFetch('/firewall/rules/' + id, { method: 'DELETE' });
+        toast('IP Unblocked ✅');
+        wafRefresh();
+      } catch (err) {
+        toast('Error: ' + err.message);
+      }
+    }
+
+    // Auto-refresh WAF if active
+    setInterval(() => {
+      const p = document.getElementById('page-firewall');
+      if (p && p.classList.contains('active')) wafRefresh();
+    }, 10000);
 
     /* ===================================================
        LOGOUT
