@@ -1718,12 +1718,7 @@
     /* ===================================================
        STATE
        =================================================== */
-    let USERS = [
-      { email: 'admin@bank.com', password: 'admin123', role: 'admin', name: 'Priya Sharma', status: 'active', accessLimit: 5, strikes: 0 },
-      { email: 'arjun@bank.com', password: 'analyst123', role: 'analyst', name: 'Arjun Kumar', status: 'active', accessLimit: 3, strikes: 0 },
-      { email: 'kavya@bank.com', password: 'viewer123', role: 'viewer', name: 'Kavya Nair', status: 'active', accessLimit: 3, strikes: 0 },
-      { email: 'priya@bank.com', password: 'priya123', role: 'viewer', name: 'Priya Sharma', status: 'active', accessLimit: 3, strikes: 0 }
-    ];
+    let USERS = [];
 
     let currentUser = null;
     let adminAlerts = [];
@@ -1752,7 +1747,7 @@
     /* ===================================================
        AUTH
        =================================================== */
-    function doLogin() {
+    async function doLogin() {
       const email = document.getElementById('loginEmail').value.trim().toLowerCase();
       const pass = document.getElementById('loginPass').value;
       const err = document.getElementById('loginError');
@@ -1760,13 +1755,25 @@
 
       if (!email || !pass) { showError(err, 'Enter email and password'); return; }
 
-      const user = USERS.find(x => x.email.toLowerCase() === email && x.password === pass);
-      if (!user) { showError(err, 'Invalid email or password'); return; }
-      if (user.status === 'pending') { showError(err, 'Account pending admin approval'); return; }
-      if (user.status === 'suspended') { showError(err, 'Account suspended. Contact admin.'); return; }
+      try {
+        const res = await apiFetch('/auth/login', {
+          method: 'POST',
+          body: JSON.stringify({ email, password: pass })
+        });
 
-      currentUser = user;
-      enterApp();
+        localStorage.setItem('fc03_token', res.token);
+        currentUser = res.user;
+        currentUser.accessLimit = currentUser.access_limit || 3;
+        
+        if (currentUser.status === 'pending') { showError(err, 'Account pending admin approval'); return; }
+        if (currentUser.status === 'suspended') { showError(err, 'Account suspended. Contact admin.'); return; }
+
+        enterApp();
+      } catch (e) {
+        let msg = 'Invalid email or password';
+        try { msg = JSON.parse(e.message).error; } catch(err) {}
+        showError(err, msg);
+      }
     }
 
     function fillLogin(email, pass) {
@@ -1775,7 +1782,7 @@
       document.getElementById('loginEmail').focus();
     }
 
-    function doSignup() {
+    async function doSignup() {
       const name = document.getElementById('suName').value.trim();
       const email = document.getElementById('suEmail').value.trim().toLowerCase();
       const pass = document.getElementById('suPass').value;
@@ -1790,21 +1797,26 @@
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showError(err, 'Enter a valid email'); return; }
       if (pass.length < 6) { showError(err, 'Password must be at least 6 characters'); return; }
       if (pass !== pass2) { showError(err, 'Passwords do not match'); return; }
-      if (USERS.some(x => x.email.toLowerCase() === email)) { showError(err, 'Email already registered'); return; }
 
-      const status = (role === 'admin') ? 'pending' : 'active';
-      USERS.push({ email, password: pass, role, name, status, accessLimit: 3, strikes: 0 });
+      try {
+        const res = await apiFetch('/auth/register', {
+          method: 'POST',
+          body: JSON.stringify({ name, email, password: pass, role })
+        });
 
-      ok.textContent = status === 'pending'
-        ? '✅ Signup successful. Admin approval pending for admin role.'
-        : '✅ Signup successful. Please login.';
-      ok.classList.add('show');
+        ok.textContent = res.user.status === 'pending'
+          ? '✅ Signup successful. Admin approval pending for admin role.'
+          : '✅ Signup successful. Please login.';
+        ok.classList.add('show');
 
-      if (status === 'active') {
         setTimeout(() => {
           document.querySelector('[data-tab="login"]').click();
           document.getElementById('loginEmail').value = email;
         }, 1500);
+      } catch (e) {
+        let msg = 'Signup failed';
+        try { msg = JSON.parse(e.message).error; } catch(err) {}
+        showError(err, msg);
       }
     }
 
@@ -1846,6 +1858,18 @@
       renderAll();
       showPage(ROLES[currentUser.role].pages[0]);
       toast(`Welcome, ${currentUser.name.split(' ')[0]}! 🎉`);
+      
+      if (currentUser.role === 'admin') refreshUsers();
+    }
+
+    async function refreshUsers() {
+      try {
+        const res = await apiFetch('/users');
+        USERS = res.users;
+        renderUsers();
+      } catch (e) {
+        console.error('Failed to load users', e);
+      }
     }
 
     function refreshEvalTime() {
@@ -1855,11 +1879,10 @@
     }
 
     function updateSidebarLimit() {
-      const u = USERS.find(x => x.email === currentUser.email);
       const el = document.getElementById('sidebarLimit');
-      if (!u) { el.textContent = ''; return; }
-      const over = u.strikes >= u.accessLimit;
-      el.innerHTML = `Risk strikes: <strong style="color:${over ? 'var(--danger)' : 'var(--muted)'}">${u.strikes} / ${u.accessLimit}</strong>`;
+      if (!currentUser) { el.textContent = ''; return; }
+      const over = currentUser.strikes >= currentUser.accessLimit;
+      el.innerHTML = `Risk strikes: <strong style="color:${over ? 'var(--danger)' : 'var(--muted)'}">${currentUser.strikes} / ${currentUser.accessLimit}</strong>`;
     }
 
     /* ===================================================
@@ -2113,7 +2136,7 @@
     /* ===================================================
        USER MANAGEMENT
        =================================================== */
-    function addUser() {
+    async function addUser() {
       const name = document.getElementById('auName').value.trim();
       const email = document.getElementById('auEmail').value.trim().toLowerCase();
       const pass = document.getElementById('auPass').value;
@@ -2127,40 +2150,58 @@
       if (!name || !email || !pass) { showError(err, 'Name, email and password are required'); return; }
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showError(err, 'Enter a valid email address'); return; }
       if (pass.length < 6) { showError(err, 'Password must be at least 6 characters'); return; }
-      if (USERS.some(x => x.email.toLowerCase() === email)) { showError(err, 'This email is already registered'); return; }
 
-      USERS.push({ email, password: pass, role, name, status: 'active', accessLimit: limit, strikes: 0 });
+      try {
+        await apiFetch('/users', {
+          method: 'POST',
+          body: JSON.stringify({ name, email, password: pass, role, accessLimit: limit })
+        });
 
-      ok.textContent = `✅ User "${name}" created as ${role.toUpperCase()}. Login: ${email} / ${pass}`;
-      ok.classList.add('show');
+        ok.textContent = `✅ User "${name}" created as ${role.toUpperCase()}. Login: ${email} / ${pass}`;
+        ok.classList.add('show');
 
-      logAudit('CREATE_USER', 'user:' + email);
+        document.getElementById('auName').value = '';
+        document.getElementById('auEmail').value = '';
+        document.getElementById('auPass').value = '';
+        document.getElementById('auLimit').value = 3;
 
-      document.getElementById('auName').value = '';
-      document.getElementById('auEmail').value = '';
-      document.getElementById('auPass').value = '';
-      document.getElementById('auLimit').value = 3;
-
-      renderUsers();
-      toast('User created ✅');
+        await refreshUsers();
+        toast('User created ✅');
+      } catch (e) {
+        let msg = 'Failed to create user';
+        try { msg = JSON.parse(e.message).error; } catch(err) {}
+        showError(err, msg);
+      }
     }
 
-    function approveUser(email) {
-      const u = USERS.find(x => x.email === email);
-      if (!u) return;
-      u.status = 'active';
-      renderUsers();
-      logAudit('APPROVE_USER', 'user:' + email);
-      toast('User approved ✅');
+    async function approveUser(email) {
+      try {
+        await apiFetch(`/users/${encodeURIComponent(email)}/status`, {
+          method: 'PATCH',
+          body: JSON.stringify({ status: 'active' })
+        });
+        await refreshUsers();
+        toast('User approved ✅');
+      } catch (e) {
+        toast('Error approving user');
+      }
     }
 
-    function toggleUser(email) {
+    async function toggleUser(email) {
       const u = USERS.find(x => x.email === email);
       if (!u) return;
-      u.status = u.status === 'suspended' ? 'active' : 'suspended';
-      renderUsers();
-      logAudit(u.status === 'suspended' ? 'SUSPEND_USER' : 'ACTIVATE_USER', 'user:' + email);
-      toast(`User ${u.status}`);
+      
+      const newStatus = u.status === 'suspended' ? 'active' : 'suspended';
+      try {
+        await apiFetch(`/users/${encodeURIComponent(email)}/status`, {
+          method: 'PATCH',
+          body: JSON.stringify({ status: newStatus })
+        });
+        await refreshUsers();
+        toast(`User ${newStatus}`);
+      } catch (e) {
+        toast('Error updating user');
+      }
     }
 
     /* ===================================================
@@ -2501,11 +2542,15 @@
     }
 
     /* ===================================================
-       FIREWALL (WAF)
+       FIREWALL (WAF) & API
        =================================================== */
     async function apiFetch(path, options = {}) {
+      const headers = { 'Content-Type': 'application/json' };
+      const token = localStorage.getItem('fc03_token');
+      if (token) headers['Authorization'] = 'Bearer ' + token;
+      
       const res = await fetch('/api' + path, {
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         ...options
       });
       if (!res.ok) throw new Error(await res.text());
@@ -2584,6 +2629,7 @@
        LOGOUT
        =================================================== */
     function doLogout() {
+      localStorage.removeItem('fc03_token');
       currentUser = null;
       pendingRequest = null;
       otpCode = null;
