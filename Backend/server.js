@@ -59,6 +59,15 @@ app.use('/api/firewall', firewallRoutes);
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date() }));
 
+// Serve Frontend Static Files
+const path = require('path');
+app.use(express.static(path.join(__dirname, '../Frontend')));
+
+// Catch-all route to serve the SPA
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../Frontend/index.html'));
+});
+
 // Global error handler
 app.use((err, req, res, next) => {
   console.error(err);
