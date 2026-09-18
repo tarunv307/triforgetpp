@@ -13,7 +13,9 @@ const firewallRoutes = require('./routes/firewall');
 
 const app = express();
 
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false
+}));
 app.use(cors({ origin: '*' }));
 app.use(express.json({ limit: '1mb' }));
 
